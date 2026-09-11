@@ -1,1 +1,859 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa del 1xb — Live Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #7c5cfc;
+    --accent-soft: rgba(124,92,252,0.15);
+    --green: #2ecc71;
+    --green-soft: rgba(46,204,113,0.12);
+    --red: #e74c3c;
+    --red-soft: rgba(231,76,60,0.12);
+    --orange: #f39c12;
+    --orange-soft: rgba(243,156,18,0.12);
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --danger-zone: #ff2d55;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 20px 16px 60px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 30%, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* BANKROLL HERO */
+  .bankroll-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .bankroll-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .bankroll-amount {
+    font-size: 52px;
+    font-weight: 800;
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+
+  .bankroll-amount.danger { color: var(--red); }
+  .bankroll-amount.caution { color: var(--orange); }
+  .bankroll-amount.good { color: var(--green); }
+
+  .bankroll-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  input[type="number"], input[type="text"], select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  textarea { resize: none; }
+
+  /* LIMITS */
+  .limits-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .limit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .limit-card .ctx-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.1em;
+  }
+
+  .limit-card .ctx-pct {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .limit-card .ctx-amount {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .limit-card.c1 { border-color: rgba(46,204,113,0.3); }
+  .limit-card.c1 .ctx-pct { color: var(--green); }
+  .limit-card.c2 { border-color: rgba(243,156,18,0.3); }
+  .limit-card.c2 .ctx-pct { color: var(--orange); }
+  .limit-card.c3 { border-color: rgba(124,92,252,0.3); }
+  .limit-card.c3 .ctx-pct { color: var(--accent); }
+
+  /* ALERT BANNER */
+  .alert-banner {
+    display: none;
+    background: rgba(255,45,85,0.15);
+    border: 1px solid var(--danger-zone);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--danger-zone);
+    text-align: center;
+  }
+
+  .alert-banner.visible { display: block; }
+
+  /* FORM */
+  .section-title {
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .form-row.single { grid-template-columns: 1fr; }
+
+  .field-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.08em;
+  }
+
+  /* MISE VALIDATOR */
+  .mise-validator {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 10px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    display: none;
+  }
+
+  .mise-validator.ok { 
+    border-left: 3px solid var(--green); 
+    color: var(--green);
+  }
+
+  .mise-validator.warn { 
+    border-left: 3px solid var(--orange); 
+    color: var(--orange);
+  }
+
+  .mise-validator.danger { 
+    border-left: 3px solid var(--danger-zone); 
+    color: var(--danger-zone);
+  }
+
+  /* BUTTONS */
+  .btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 13px 20px;
+    width: 100%;
+    transition: opacity 0.2s;
+    margin-top: 12px;
+  }
+
+  .btn:hover { opacity: 0.85; }
+  .btn.secondary {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  /* HISTORY */
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .live-entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    position: relative;
+  }
+
+  .live-entry.won { border-left: 3px solid var(--green); }
+  .live-entry.lost { border-left: 3px solid var(--red); }
+  .live-entry.pending { border-left: 3px solid var(--muted); }
+
+  .entry-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .entry-match {
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+    padding-right: 10px;
+  }
+
+  .entry-result-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .won .entry-result-badge { background: var(--green-soft); color: var(--green); }
+  .lost .entry-result-badge { background: var(--red-soft); color: var(--red); }
+  .pending .entry-result-badge { background: var(--surface2); color: var(--muted); }
+
+  .entry-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .meta-chip {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    background: var(--surface2);
+    padding: 3px 9px;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+
+  .meta-chip.mise { color: var(--text); }
+
+  .entry-reason {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+
+  .entry-pnl {
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
+  }
+
+  .entry-pnl.pos { color: var(--green); }
+  .entry-pnl.neg { color: var(--red); }
+
+  .entry-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-sm {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    padding: 7px 14px;
+    transition: all 0.2s;
+  }
+
+  .btn-sm.green:hover { background: var(--green-soft); color: var(--green); border-color: var(--green); }
+  .btn-sm.red:hover { background: var(--red-soft); color: var(--red); border-color: var(--red); }
+
+  /* STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* CONTEXT SELECT COLORS */
+  select option { background: #1a1a26; }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    margin-top: 12px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: var(--green);
+    transition: width 0.5s ease, background 0.3s;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    font-size: 13px;
+  }
+
+  .btn-export {
+    background: var(--green-soft);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    color: var(--green);
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 11px 20px;
+    width: 100%;
+    margin-top: 12px;
+    transition: opacity 0.2s;
+  }
+  .btn-export:hover { opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CASA DEL 1XB</div>
+  <h1>Live Tracker</h1>
+</header>
+
+<!-- BANKROLL -->
+<div class="bankroll-hero">
+  <div class="bankroll-label">BANKROLL ACTUELLE</div>
+  <div class="bankroll-amount" id="bankrollDisplay">0.00 €</div>
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>0 €</span>
+      <span id="goalLabel">Objectif : 10 000 €</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="bankroll-input-row">
+    <input type="number" id="bankrollInput" placeholder="Saisir bankroll (€)" step="0.01" min="0" style="max-width:180px">
+    <button class="btn" onclick="updateBankroll()" style="width:auto;padding:10px 18px;margin-top:0">Mettre à jour</button>
+  </div>
+</div>
+
+<!-- LIMITS -->
+<div class="limits-grid">
+  <div class="limit-card c1">
+    <div class="ctx-label">TIPSTER ANALYSÉ</div>
+    <div class="ctx-pct">20%</div>
+    <div class="ctx-amount" id="limit1">= 0.00 €</div>
+  </div>
+  <div class="limit-card c2">
+    <div class="ctx-label">INTUITION FORTE</div>
+    <div class="ctx-pct">15%</div>
+    <div class="ctx-amount" id="limit2">= 0.00 €</div>
+  </div>
+  <div class="limit-card c3">
+    <div class="ctx-label">DOUTE</div>
+    <div class="ctx-pct">10%</div>
+    <div class="ctx-amount" id="limit3">= 0.00 €</div>
+  </div>
+</div>
+
+<!-- ALERT -->
+<div class="alert-banner" id="alertBanner"></div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('saisie')">+ Nouveau live</div>
+  <div class="tab" onclick="switchTab('historique')">Historique</div>
+  <div class="tab" onclick="switchTab('stats')">Stats</div>
+</div>
+
+<!-- TAB : SAISIE -->
+<div class="tab-content active" id="tab-saisie">
+  <div class="form-card">
+    <div class="section-title">ENREGISTRER UN LIVE</div>
+
+    <div class="form-row single">
+      <div>
+        <div class="field-label">Match</div>
+        <input type="text" id="matchInput" placeholder="Ex: PSG vs Arsenal">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <div class="field-label">Tipster / Source</div>
+        <input type="text" id="tipsterInput" placeholder="Nom du tipster">
+      </div>
+      <div>
+        <div class="field-label">Cote</div>
+        <input type="number" id="coteInput" placeholder="Ex: 1.75" step="0.01" min="1">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <div class="field-label">Contexte</div>
+        <select id="contextSelect" onchange="validateMise()">
+          <option value="">Choisir...</option>
+          <option value="1">Tipster live analysé (max 20%)</option>
+          <option value="2">Intuition forte (max 15%)</option>
+          <option value="3">Doute, peut le faire (max 10%)</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">Mise (€)</div>
+        <input type="number" id="miseInput" placeholder="0.00" step="0.01" min="0" oninput="validateMise()">
+      </div>
+    </div>
+
+    <div class="form-row single">
+      <div>
+        <div class="field-label">Raison de jouer ce live</div>
+        <select id="raisonSelect">
+          <option value="">Choisir la raison...</option>
+          <option value="Opportunité analysée — pattern tipster confirmé">Opportunité analysée — pattern tipster confirmé</option>
+          <option value="Intuition forte sur le déroulé du match">Intuition forte sur le déroulé du match</option>
+          <option value="Récupérer des pertes récentes">Récupérer des pertes récentes</option>
+          <option value="Dans le vert, envie d'augmenter le gain">Dans le vert — envie d'augmenter le gain</option>
+          <option value="Ennui / impulsion du moment">Ennui / impulsion du moment</option>
+          <option value="Manque de patience, doute sur la bankroll">Manque de patience, doute sur la bankroll</option>
+          <option value="Livers actifs sur ce match">Livers actifs sur ce match</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mise-validator" id="miseValidator"></div>
+
+    <button class="btn" onclick="addLive()">Enregistrer le live</button>
+  </div>
+</div>
+
+<!-- TAB : HISTORIQUE -->
+<div class="tab-content" id="tab-historique">
+  <div class="history-list" id="historyList">
+    <div class="empty-state">Aucun live enregistré.</div>
+  </div>
+</div>
+
+<!-- TAB : STATS -->
+<div class="tab-content" id="tab-stats">
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">LIVES JOUÉS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statWR" style="color:var(--green)">—</div>
+      <div class="stat-label">WIN RATE</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statPnl">0.00 €</div>
+      <div class="stat-label">P&L CUMULÉ</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statDanger" style="color:var(--red)">0</div>
+      <div class="stat-label">DÉPASSEMENTS</div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="section-title">RAISONS LES PLUS FRÉQUENTES</div>
+    <div id="raisonStats" style="font-size:13px;color:var(--muted);padding-top:4px">Aucune donnée.</div>
+  </div>
+
+  <div class="form-card">
+    <div class="section-title">EXPORT</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Télécharge ton historique complet en CSV → à déposer dans Drive.</div>
+    <button class="btn-export" onclick="exportCSV()">⬇ Exporter en CSV</button>
+  </div>
+</div>
+
+<script>
+  let bankroll = parseFloat(localStorage.getItem('cdx_bankroll') || '0');
+  let lives = JSON.parse(localStorage.getItem('cdx_lives') || '[]');
+
+  const LIMITS = { '1': 0.20, '2': 0.15, '3': 0.10 };
+  const GOAL = 10000;
+
+  function save() {
+    localStorage.setItem('cdx_bankroll', bankroll);
+    localStorage.setItem('cdx_lives', JSON.stringify(lives));
+  }
+
+  function updateBankroll() {
+    const v = parseFloat(document.getElementById('bankrollInput').value);
+    if (isNaN(v) || v < 0) return;
+    bankroll = v;
+    save();
+    render();
+    document.getElementById('bankrollInput').value = '';
+  }
+
+  function render() {
+    const el = document.getElementById('bankrollDisplay');
+    el.textContent = bankroll.toFixed(2) + ' €';
+    el.className = 'bankroll-amount';
+    if (bankroll <= 0) el.classList.add('danger');
+    else if (bankroll < 5) el.classList.add('caution');
+    else el.classList.add('good');
+
+    // limits
+    document.getElementById('limit1').textContent = '= ' + (bankroll * 0.20).toFixed(2) + ' €';
+    document.getElementById('limit2').textContent = '= ' + (bankroll * 0.15).toFixed(2) + ' €';
+    document.getElementById('limit3').textContent = '= ' + (bankroll * 0.10).toFixed(2) + ' €';
+
+    // progress
+    const pct = Math.min((bankroll / GOAL) * 100, 100);
+    const fill = document.getElementById('progressFill');
+    fill.style.width = pct + '%';
+    fill.style.background = pct < 10 ? 'var(--red)' : pct < 30 ? 'var(--orange)' : 'var(--green)';
+
+    // alert
+    const alert = document.getElementById('alertBanner');
+    if (bankroll <= 0) {
+      alert.textContent = '⚠️ Bankroll à zéro — aucune mise possible. Attends une nouvelle entrée.';
+      alert.classList.add('visible');
+    } else if (bankroll < 3) {
+      alert.textContent = '⚠️ Bankroll critique — mise max autorisée : ' + (bankroll * 0.10).toFixed(2) + ' € (10% max, contexte 3 uniquement)';
+      alert.classList.add('visible');
+    } else {
+      alert.classList.remove('visible');
+    }
+
+    renderHistory();
+    renderStats();
+  }
+
+  function validateMise() {
+    const ctx = document.getElementById('contextSelect').value;
+    const mise = parseFloat(document.getElementById('miseInput').value);
+    const v = document.getElementById('miseValidator');
+    if (!ctx || isNaN(mise)) { v.style.display = 'none'; return; }
+    const limit = LIMITS[ctx];
+    const maxMise = bankroll * limit;
+    const pct = bankroll > 0 ? ((mise / bankroll) * 100).toFixed(1) : 0;
+    v.style.display = 'block';
+    if (mise <= maxMise) {
+      v.className = 'mise-validator ok';
+      v.textContent = '✓ ' + pct + '% de bankroll — dans la limite autorisée (' + (limit*100) + '% max = ' + maxMise.toFixed(2) + ' €)';
+    } else if (mise <= maxMise * 1.3) {
+      v.className = 'mise-validator warn';
+      v.textContent = '⚠ ' + pct + '% de bankroll — légèrement au-dessus. Limite : ' + maxMise.toFixed(2) + ' €';
+    } else {
+      v.className = 'mise-validator danger';
+      v.textContent = '✗ STOP. ' + pct + '% de bankroll — dépasse la limite de ' + (limit*100) + '% (' + maxMise.toFixed(2) + ' €). Tu vas te tirer une balle.';
+    }
+  }
+
+  function addLive() {
+    const match = document.getElementById('matchInput').value.trim();
+    const tipster = document.getElementById('tipsterInput').value.trim();
+    const cote = parseFloat(document.getElementById('coteInput').value);
+    const ctx = document.getElementById('contextSelect').value;
+    const mise = parseFloat(document.getElementById('miseInput').value);
+    const raison = document.getElementById('raisonSelect').value;
+
+    if (!match || !ctx || isNaN(mise) || mise <= 0) {
+      alert('Remplis au minimum : match, contexte et mise.');
+      return;
+    }
+
+    const limit = LIMITS[ctx];
+    const maxMise = bankroll * limit;
+    const depassement = mise > maxMise;
+
+    const entry = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString('fr-FR'),
+      match, tipster, cote: isNaN(cote) ? null : cote,
+      ctx, mise, raison, depassement,
+      result: 'pending',
+      gain: null
+    };
+
+    lives.unshift(entry);
+    save();
+
+    // reset
+    ['matchInput','tipsterInput','coteInput','miseInput'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('contextSelect').value = '';
+    document.getElementById('raisonSelect').value = '';
+    document.getElementById('miseValidator').style.display = 'none';
+
+    switchTab('historique');
+    render();
+  }
+
+  function setResult(id, result) {
+    const entry = lives.find(l => l.id === id);
+    if (!entry) return;
+    entry.result = result;
+    if (result === 'won') {
+      const gain = entry.mise * (entry.cote - 1);
+      entry.gain = gain;
+      bankroll += gain;
+    } else if (result === 'lost') {
+      entry.gain = -entry.mise;
+      bankroll -= entry.mise;
+      if (bankroll < 0) bankroll = 0;
+    }
+    save();
+    render();
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('historyList');
+    if (!lives.length) { el.innerHTML = '<div class="empty-state">Aucun live enregistré.</div>'; return; }
+    const ctxLabels = {'1':'Tipster analysé','2':'Intuition forte','3':'Doute'};
+    el.innerHTML = lives.map(l => `
+      <div class="live-entry ${l.result}">
+        <div class="entry-top">
+          <div class="entry-match">${l.match}</div>
+          <div class="entry-result-badge">${l.result === 'won' ? 'Gagné' : l.result === 'lost' ? 'Perdu' : 'En attente'}</div>
+        </div>
+        <div class="entry-meta">
+          <span class="meta-chip">${l.date}</span>
+          ${l.tipster ? `<span class="meta-chip">${l.tipster}</span>` : ''}
+          ${l.cote ? `<span class="meta-chip">@${l.cote}</span>` : ''}
+          <span class="meta-chip mise">${l.mise.toFixed(2)} €</span>
+          <span class="meta-chip">${ctxLabels[l.ctx]}</span>
+          ${l.depassement ? '<span class="meta-chip" style="color:var(--danger-zone)">⚠ dépassement</span>' : ''}
+        </div>
+        ${l.raison ? `<div class="entry-reason">"${l.raison}"</div>` : ''}
+        ${l.gain !== null ? `<div class="entry-pnl ${l.gain >= 0 ? 'pos' : 'neg'}">${l.gain >= 0 ? '+' : ''}${l.gain.toFixed(2)} €</div>` : ''}
+        ${l.result === 'pending' ? `
+        <div class="entry-actions">
+          <button class="btn-sm green" onclick="setResult(${l.id},'won')">Gagné ✓</button>
+          <button class="btn-sm red" onclick="setResult(${l.id},'lost')">Perdu ✗</button>
+        </div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function renderStats() {
+    const done = lives.filter(l => l.result !== 'pending');
+    const won = done.filter(l => l.result === 'won');
+    const pnl = done.reduce((s, l) => s + (l.gain || 0), 0);
+    const depas = lives.filter(l => l.depassement).length;
+
+    document.getElementById('statTotal').textContent = lives.length;
+    document.getElementById('statWR').textContent = done.length ? Math.round(won.length / done.length * 100) + '%' : '—';
+    document.getElementById('statWR').style.color = done.length ? (won.length/done.length >= 0.5 ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
+    const pnlEl = document.getElementById('statPnl');
+    pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' €';
+    pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('statDanger').textContent = depas;
+
+    // raisons
+    const counts = {};
+    lives.forEach(l => { if (l.raison) counts[l.raison] = (counts[l.raison] || 0) + 1; });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+    const rEl = document.getElementById('raisonStats');
+    if (!sorted.length) { rEl.textContent = 'Aucune donnée.'; return; }
+    rEl.innerHTML = sorted.map(([r, n]) => 
+      `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span>${r}</span>
+        <span style="color:var(--text);font-family:'DM Mono',monospace;font-weight:600">${n}×</span>
+      </div>`
+    ).join('');
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t,i) => {
+      const names = ['saisie','historique','stats'];
+      t.classList.toggle('active', names[i] === name);
+    });
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  function exportCSV() {
+    if (!lives.length) { alert('Aucun live à exporter.'); return; }
+    const ctxLabels = {'1':'Tipster analysé','2':'Intuition forte','3':'Doute'};
+    const headers = ['Date','Match','Tipster','Cote','Contexte','Mise (€)','Raison','Résultat','Gain/Perte (€)','Dépassement'];
+    const rows = lives.map(l => [
+      l.date,
+      l.match,
+      l.tipster || '',
+      l.cote || '',
+      ctxLabels[l.ctx] || '',
+      l.mise.toFixed(2),
+      l.raison || '',
+      l.result === 'won' ? 'Gagné' : l.result === 'lost' ? 'Perdu' : 'En attente',
+      l.gain !== null ? l.gain.toFixed(2) : '',
+      l.depassement ? 'Oui' : 'Non'
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `Casa_1xb_Lives_${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  render();
+</script>
+</body>
+</html>
 
