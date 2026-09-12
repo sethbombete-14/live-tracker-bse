@@ -626,22 +626,85 @@
 </div>
 
 <script>
+  const SUPABASE_URL = 'https://nvjcbnrbkssvknqdrngi.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_6WHFlAj_M4iy6mI8lnwOXQ_RHVlylye';
+  const SB_HEADERS = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+
   let bankroll = parseFloat(localStorage.getItem('cdx_bankroll') || '0');
-  let lives = JSON.parse(localStorage.getItem('cdx_lives') || '[]');
+  let lives = [];
 
   const LIMITS = { '1': 0.20, '2': 0.15, '3': 0.10 };
   const GOAL = 10000;
 
-  function save() {
+  // bankroll reste local (simple, pas besoin de table dédiée)
+  function saveBankroll() {
     localStorage.setItem('cdx_bankroll', bankroll);
-    localStorage.setItem('cdx_lives', JSON.stringify(lives));
+  }
+
+  async function fetchLives() {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/lives?select=*&order=created_at.desc`, {
+        headers: SB_HEADERS
+      });
+      if (!res.ok) throw new Error('fetch failed');
+      const rows = await res.json();
+      lives = rows.map(r => ({
+        id: r.id,
+        date: new Date(r.created_at).toLocaleDateString('fr-FR'),
+        match: r.match,
+        tipster: r.tipster,
+        cote: r.cote,
+        ctx: r.contexte,
+        mise: r.mise,
+        raison: r.raison,
+        result: r.resultat,
+        gain: r.gain,
+        depassement: r.depassement
+      }));
+    } catch (e) {
+      console.error('Erreur chargement Supabase:', e);
+    }
+    render();
+  }
+
+  async function insertLive(entry) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/lives`, {
+      method: 'POST',
+      headers: SB_HEADERS,
+      body: JSON.stringify({
+        match: entry.match,
+        tipster: entry.tipster,
+        cote: entry.cote,
+        contexte: entry.ctx,
+        mise: entry.mise,
+        raison: entry.raison,
+        resultat: 'pending',
+        depassement: entry.depassement
+      })
+    });
+    if (!res.ok) throw new Error('insert failed');
+    return res.json();
+  }
+
+  async function updateLiveResult(id, result, gain) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/lives?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: SB_HEADERS,
+      body: JSON.stringify({ resultat: result, gain: gain })
+    });
+    if (!res.ok) throw new Error('update failed');
   }
 
   function updateBankroll() {
     const v = parseFloat(document.getElementById('bankrollInput').value);
     if (isNaN(v) || v < 0) return;
     bankroll = v;
-    save();
+    saveBankroll();
     render();
     document.getElementById('bankrollInput').value = '';
   }
@@ -702,7 +765,7 @@
     }
   }
 
-  function addLive() {
+  async function addLive() {
     const match = document.getElementById('matchInput').value.trim();
     const tipster = document.getElementById('tipsterInput').value.trim();
     const cote = parseFloat(document.getElementById('coteInput').value);
@@ -720,16 +783,17 @@
     const depassement = mise > maxMise;
 
     const entry = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString('fr-FR'),
       match, tipster, cote: isNaN(cote) ? null : cote,
-      ctx, mise, raison, depassement,
-      result: 'pending',
-      gain: null
+      ctx, mise, raison, depassement
     };
 
-    lives.unshift(entry);
-    save();
+    try {
+      await insertLive(entry);
+    } catch (e) {
+      alert('Erreur de sauvegarde en ligne. Vérifie ta connexion.');
+      console.error(e);
+      return;
+    }
 
     // reset
     ['matchInput','tipsterInput','coteInput','miseInput'].forEach(id => document.getElementById(id).value = '');
@@ -738,24 +802,29 @@
     document.getElementById('miseValidator').style.display = 'none';
 
     switchTab('historique');
-    render();
+    await fetchLives();
   }
 
-  function setResult(id, result) {
+  async function setResult(id, result) {
     const entry = lives.find(l => l.id === id);
     if (!entry) return;
-    entry.result = result;
+    let gain = null;
     if (result === 'won') {
-      const gain = entry.mise * (entry.cote - 1);
-      entry.gain = gain;
+      gain = entry.mise * (entry.cote - 1);
       bankroll += gain;
     } else if (result === 'lost') {
-      entry.gain = -entry.mise;
+      gain = -entry.mise;
       bankroll -= entry.mise;
       if (bankroll < 0) bankroll = 0;
     }
-    save();
-    render();
+    saveBankroll();
+    try {
+      await updateLiveResult(id, result, gain);
+    } catch (e) {
+      alert('Erreur de mise à jour en ligne.');
+      console.error(e);
+    }
+    await fetchLives();
   }
 
   function renderHistory() {
@@ -852,8 +921,7 @@
     URL.revokeObjectURL(url);
   }
 
-  render();
+  fetchLives();
 </script>
 </body>
 </html>
-
